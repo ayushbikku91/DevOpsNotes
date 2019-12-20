@@ -1,0 +1,48 @@
+[root@docker-host ~]# docker search hello-world
+[root@docker-host ~]# docker search centos
+root@docker-host ~]# docker pull docker.io/hello-world
+# docker images    : Show list of available docker images in your local docker host
+Dcoker images display following information.
+Repository: Name of the Repository
+Tag: Version of the Docker Images
+Image ID: Unique Docker images ID to maange the Docker images
+Created" When images is created
+Size: Size of the Docker images
+
+#docker inspect - Command to know detaied info about a docker images available locally using Docker Image ID.
+
+#docker history : This command along with docker Image ID to get a history of a Docker images.
+[root@docker-host ~]# docker history e38bc07ac18e
+
+How to Save or Backup a Docker Images:
+#docker save - This command along with Docker image ID to save or backup a docker iamges in archive format. It can be used to restore the docker images in any docker host.
+e.g: # docker save e38bc07ac18e > backup_hello-world.tar
+* Restore  a Docker Images from backup.
+#docker load: Command along with Docker image ID to restore from backup.
+e.g: # docker load -i backup_hello-world.tar
+Loaded image ID: sha256:e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96
+
+* Remove or Delete Docker Images:
+#docker images: To find the docker image ID or Image name 
+#docker rmi- To remove or delete the docker images
+
+* To remove multiple docker images, mention the docker images ID separated by spaces as below:
+[root@docker-host ~]# docker rmi 49f7960eb7e4 47fjay738290 987tr78rt5g5
+
+* To remove all docker images in a single command:
+# docker rmi $(docker images -a -q)
+==================================================
+Docker File
+
+* Syntax to write instruction and its arguments within a dockerfile:
+# Comment
+INSTRUCTION arguments
+
+*Instruction can be given in lowercase or uppercase letters.
+
+FROM docker.io/centos
+MAINTAINER Devops Engineer
+RUN yum update && yum -y install httpd
+RUN mkdir -p /data/myscript
+WORKDIR /data/myscript
+CMD python app.py
