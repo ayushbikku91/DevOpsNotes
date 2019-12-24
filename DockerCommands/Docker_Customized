@@ -45,4 +45,195 @@ MAINTAINER Devops Engineer
 RUN yum update && yum -y install httpd
 RUN mkdir -p /data/myscript
 WORKDIR /data/myscript
+CMD python app.python
+
+
+
+#docker inspect : Shows detailed information about a Docker images available locally using Docker image ID. 
+[root@docker-host ~]# docker inspect 49f7960eb7e4
+
+#[root@docker-host ~]# docker history e38bc07ac18e  :- Get history of docker iamges. 
+
+#To save or backup a Docker images in archive format It can be used to restore the Docke images in any Docker host.
+
+ docker save e38bc07ac18e > backup_hello-world.tar
+* How to restore a Docker images from a backup ?
+[root@docker-host ~]# docker load -i backup_hello-world.tar
+*To remove all docker images in a single command:
+[root@docker-host ~]# docker rmi $(docker images -a -q)
+
+Q. Whatt is dockerfile ?
+Ans: Dockerfile is a file used to build our own docker images by giving some instructions to customize an existing docker images based on our requirement in an automated way without running a docker container. 
+
+Q. Why dockerfile is required ?
+Ans: We have a lot of pre-existing docker images available in docker hub registery. It can be pulled directly and we can use it for our need. 
+
+But still we may need to customize the existing docker images based on our requiremens. So, dockerfile helps us to build our own docker images automatically as per the instructions given. 
+
+Q. How to write dockerfile ?
+Ans: use any editor(vi & nano) to create a dockerfile with filename either "dockerfile" or "Dockerfile" and add the instructions based on the requirement.
+------------------------------------------------------------
+How to create a dockerfile.
+#pwd
+/root
+[root@docker-host ~]# touch dockerfile
+
+#cat dockerfile
+
+FROM docker.io/centos
+MAINTAINER admin
+RUN yum update && yum -y install httpd
+RUN echo "Welcome to our homepage created using dockerfile" > /var/www/html/index.html
+EXPOSE 80
+CMD apachectl -D FOREGROUND
+
+Explanations:
+--------------
+1. FROM : instruction to specify the image
+2. MAINTAINER : Instruction to specify information about the author
+3. RUN : Instruction to update all Packages and install the httpd packages
+4. Again used RUN instruction to create a homepage "index.html" under the apache default directory /var/www/html/index
+5. EXPOSE : Instruction ot open the listening port 80 of httpd
+6. CMD : Instruction to run  a apache service command as an executable when container is launched. 
+
+=========Dockerfile example======
+FROM docker.io/centos
+MAINTAINER Devops Engineer
+RUN yum update && yum -y install httpd
+RUN mkdir -p /data/myscript
+WORKDIR /data/myscript
 CMD python app.py
+---------------------------------------------
+Dockerfile instruction
+- - - - - - - - - - - - 
+
+1. FROM: Specify valid docker image name. So, Specified docker image will be downloaded from docker hub registery if it is not exists locally. 
+
+e.g: FROM docker.io/ubuntu/centos:lastes
+
+2. MAINTAINER : Specify about the author who creates this new docker image for the support. 
+
+e.g:
+MAINTAINER Administrator
+MAINTAINER admin @ learnitguide.net
+MAINTAINER Devops Engineer(admin @ learnitguide.net)
+
+3. LABEL: Used to specify metadata information to an image. A LABEL is a key-value pair. 
+
+e.g: LABEL "Application_Environment"="Development"
+LABEL "Application_Support"="LearnITGuide.net Group"
+
+
+4. EXPOSE: Used to inform about the network ports that the container listens on runtime. Docker uses this information to interconnect containers using links and to set up port rediretion on docker host system. 
+
+e.g EXPOSE 80 443
+EXPOSE 80/tcp 8080/udp
+
+5. ADD : Used to copy files , directories and remote URL files to the destination(docker container) within the filesystem of the docker images. Add instruction also has two forms- shell Form and Executable form:
+
+Shell Form: ADD src destination
+
+e.g: ADD /root/testfile /data 
+
+Executable Form - ADD["src","dest"]
+e.g: 
+
+6. COPY: Used to copy files , directories and remote URL files to the destination within the filesystem of the Docker images. Copy instruction also has two form- Shell and Executable form. 
+
+Shell Form
+-----------
+COPY src dest
+COPY /root/testfile /data/
+Executalbe Form:
+---------------
+COPY ["src","dest"]
+COPY /root/testfile /data/
+
+
+7. CMD: Used to set a command to be executed when running a container. There must be only one CMD in a dockerfile. If more than one CMD is listed, only the last CMD takes effect. 
+
+CMD instruction has two forms - Shell and Executable form. 
+
+Shell Form
+-------------
+CMD ping google.com
+CMD python myapplication.py
+
+Executable Form
+-----------------
+CMD ["ping","google.com"]
+CMD ["python","myapplication.py"]
+
+8.ENTRYPOINT: Used to configure and run a container as an executable.
+It has also two forms.  Shell form and Executable form.
+*Shell Form
+ENTRYPOINT ping google.com
+ENTRYPOINT python myapplication.py
+
+* Executable Form
+ENTRYPOINT ["ping","google.com"]
+ENTRYPOINT ["python","myapplication.py"]
+
+Note: If user specifyany arguments(Commands) at the nd of "docker run" command the specified commands overrid the default in CMD instruction, But ENTRYPOINT instruction are not overwritten by the docker run command and ENTRYPOINT instruction will run as it is.
+
+So, Docker CMD and ENTRYPOINT commands are used for same purpose, but both has some different functionality. 
+
+
+Examples of CMD instruction:
+Shell Form:
+CMD ping google.com
+CMD python myshell.sh
+
+Executable Form:
+CMD ["ping","google.com"]
+CMD ["python","myshell.sh"]
+
+
+Example of ENTRYPOINT:
+Shell Form:
+ENTRYPOINT ping google.com
+ENTRYPOINT python myapplication.py
+
+Executable Form:
+ENTRYPOINT ["ping","google.com"]
+ENTRYPOINT ["python","myapplication.py"]
+--------------------------------------------------
+Let's see one by one with an example to explain this better. 
+
+For this, we create two dockerfiles, one with CMD instruction and another one with ENTRYPOINT instruction to run a same simple script with executes "ping google.com" as an executable. 
+
+Dockerfile1: With CMD Instruction.
+Here CMD instruction runs our simple script in a container as an executable. 
+
+FROM docker.io/centos:latest
+MAINTAINER Devops Engineer
+WORKDIR /data
+RUN echo 'ping google.com' > runapp.sh
+CMD sh runapp.sh
+
+Image has already built using "docker build" command and created a image tag "cmdtest"
+
+
+Dockerfile2: With Entrypoint instruction
+FROM docker.io/centos:latest
+MAINTAINER Devops Engineer
+WORKDIR /data
+RUN echo 'ping google.com' > runapp.sh
+ENTRYPOINT sh runapp.sh
+---------------------------------------------------
+[root@docker-host ~]# docker run -d -it --name cmdtest1 learnitguide.net/cmdtest
+0eb048ff4218472871c99492c57e5369badfeeb7771ea73ba8d3d44f653ca839
+[root@docker-host ~]# docker run -d -it --name entrypointtest1 learnitguide.net/entrypointtest
+ea5a97405ee67e2fc5b3cfe9914ac3059ea542844a2ff312d7ebac6f7b613c70
+
+Check logs:
+[root@docker-host ~]# docker logs cmdtest1
+PING google.com (172.217.24.206) 56(84) bytes of data.
+64 bytes from 2a00:1450:400f:809::200e: icmp_seq=1 ttl=54 time=29.5 ms
+64 bytes from 2a00:1450:400f:809::200e: icmp_seq=2 ttl=54 time=29.2 ms
+[root@docker-host ~]# docker logs entrypointtest1
+PING google.com (172.217.24.206) 56(84) bytes of data.
+64 bytes from 2a00:1450:400f:809::200e: icmp_seq=1 ttl=54 time=28.9 ms
+64 bytes from 2a00:1450:400f:809::200e: icmp_seq=2 ttl=54 time=29.0 ms
+
+But when we run "docker run" with any arguments then arguments command will over
