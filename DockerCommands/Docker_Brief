@@ -1,0 +1,66 @@
+#docker search centos : Show the list of centos images from docker hub.
+#docker pull docker.io/hello-world : Download the particular docker image from docker registry.
+# docker images - List available docker images
+# docker tag 480a0b12adb0 learnitguide.net/httpd_server - Tag the created image 
+## docker run -d -it --name myweb1 -p 192.168.2.1:80:80   : Run and test our customized docker images by launching docker container. 
+#docker run -it -p 82:80 -d f92c13b6a72a : run docker image and map port 82 of host to 80 of container port.
+where,
+run - used to run the container
+-d - daemonize(continously)
+-i : interactive session
+-t : to allocate a pseudo terminal for container
+--name: To specify the unique container name
+-p : Specify the ipaddresses and listening ports with port mapping
+
+# docker ps: to see the status of launched container
+--------------------------------------
+[root@docker-host ~]# cat dockerfile
+FROM docker.io/centos
+MAINTAINER admin
+RUN yum update && yum -y install httpd
+RUN echo "Welcome to our homepage created using dockerfile" > /var/www/html/index.html
+EXPOSE 80
+CMD apachectl -D FOREGROUND
+--------------------------------------
+# docker inspect 49f7960eb7e4 - Show detailed info. about docker images.
+# docker history e38bc07ac(docker Image ID) : show gistory of particular docker
+#docker save e38bc07ac18e > backup_hello-world.tar : To save or backup a Docker iamges in archive format. It can be used to restore the Docker images in any Docker host. 
+#docker load -i backup_hello-world.tar : Load/restore docker images from a backup. , Use "docker images" to confirm the backup is loaded the docker image or not.
+#docker rmi 49f7960eb7e4(docker image ID) : Remove or delete docker iamges
+#docker rmi 49f7960eb7e4 47fjay738290 987tr78rt5g5 : To remove or delete multiple docker images.
+#docker rmi $(docker images -a -q) : To remove all docker images.
+#docker rm -f $(docker ps -a -q) - Delete all running container at one go.
+#docker rmi $(docker images -a -q)
+---------------------------------------------------
+Q. What is docker file ?
+Ans: Is a file used to build our own docker images by giving some instructions to customize an existing docker images based on our requirement in an automated way without running a docker container. 
+Syntax to write docker file.
+# Comment
+INSTRUCTION arguments
+
+Note: Instruction can lowercase or uppercase letters but arguments always will be lowercase.
+/* nano doockerfile */
+
+FROM docker.io/centos   //Specified docker image name will be downloaded from docker registery if it is not exists locally.
+MAINTAINER Devops Engineer  //author name
+LABEL "Application_Environment"="Development"  //Specify metadata information to an image, A key-pair value
+EXPOSE 80 443  // network ports that the container listens on runtime. dokcer interconnect containers using links and to set up port redirection on docker host system.
+EXPOSE 80/tcp 8080/udp
+ADD /root/1.txt /data/  //to copy files, directories and remote url to the destination container.Executable form["src","dest"]
+COPY /src /dest or COPY["src","dest"] // To copy files, directories and URL to docker image
+RUN yum update && yum -y install httpd  or RUN["yum","update"] // To execute any commands on top of the current image and this will create new layer.
+RUN ["systemctl","start","httpd"]  //
+RUN mkdir -p /data/myscript
+WORKDIR /data/myscript  //TO set the working directory
+CMD ping google.com or CMD ["ping","google.com"] //TO set a command to be executed when running a container.There must be only one CMD in a dockerfile.If more than one CMD is listed, last one will take effect.
+ENTRYPOINT ping google.com or ENTRYPOINT["ping","google.com"]   //TO configure and run a container as an executable. Note: Entrypoint will execute even if other commands as arguments used with docker run but CMD won't run.
+VOLUME /data  //To create or mount a volume to the docker container from the docker host filesystem.
+USER ayush:wheel //To set the username , group name, UID and GID for running subequent commands.Else root user will be used. 
+USER 1008:1200
+ENV app_version 2.0  //Set environment variable with key and value. Say to set variables APP_DIR and app_version with the values /data and 2.0 respectively. These variable will be set during the image build also available after the container launched. 
+ENV APP_DIR /data/
+ARG TMP_NAME mycustom_image //To set env variables with key and value, but this will set only duing the image build not on the container. 
+AG TMP_VER 2.0 
+ONBUILD ADD ./app/data
+ONBUILD RUN yum install httpd  // To specify a command that runs when the image in the dockerfile is used as a base image for another image.
+---------------------------------
