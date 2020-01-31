@@ -30,7 +30,7 @@ CMD apachectl -D FOREGROUND
 #docker rmi 49f7960eb7e4 47fjay738290 987tr78rt5g5 : To remove or delete multiple docker images.
 #docker rmi $(docker images -a -q) : To remove all docker images.
 #docker rm -f $(docker ps -a -q) - Delete all running container at one go.
-#docker rmi $(docker images -a -q)
+
 ---------------------------------------------------
 Q. What is docker file ?
 Ans: Is a file used to build our own docker images by giving some instructions to customize an existing docker images based on our requirement in an automated way without running a docker container. 
@@ -64,3 +64,486 @@ AG TMP_VER 2.0
 ONBUILD ADD ./app/data
 ONBUILD RUN yum install httpd  // To specify a command that runs when the image in the dockerfile is used as a base image for another image.
 ---------------------------------
+
+[root@docker-host ~]# docker run -d -it --name test_container1 learnitguide.net/variabletest
+8f298a841fb9a205dd2ca7b946cd0150e89227edc92e4d0b7b95d314381da22a
+[root@docker-host ~]# docker exec -it test_container1 /bin/bash
+[root@8f298a841fb9 /]# env
+HOSTNAME=8f298a841fb9
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PWD=/
+JAVA_VERSION=2.0
+SHLVL=1
+HOME=/root
+_=/usr/bin/env
+---------------------------
+#docker tag dc5012637937 deployall : Rename the docker images
+#docker run -d -it --name container1 deployall  : Run the docker image(deployall) with name container1.
+#docker logs container1
+# docker run -d -it --name myweb1 -p 192.168.2.1:80:80 learnitguide.net/httpd_server
+# docker port container2
+80/tcp -> 0.0.0.0:8080
+#[root@docker-host ~]# docker run -d -it --name container3 -P docker.io/httpd
+2634717516b75111a0b9f2336faa7a49cc2f13146c65a94a6e82442b6a2fad7c
+[root@docker-host ~]# docker port container3
+80/tcp -> 0.0.0.0:32769
+
+#docker rm -f 13b1c4c1738c  //Delete container forecefully
+#docker run -it ubuntu_apache /bin/bash  //Run the docker image and get container shell
+#docker container export 13b1c4c1738c > debian.tar or docker export 22e7fea8966a > 1.tar //Backup running container image
+#docker import debian.tar    //Create docker image out of backup
+#docker tag 38ee3acad283 ubuntu_apache  //Give name of docker image
+
+
+FROM ubuntu
+#RUN apt-get update
+#RUN apt-get -y install apache2
+#ADD index.html  /var/www/html
+#ENTRYPOINT apachectl -D FOREGROUND
+LABEL Name="Ayush Kumar"
+LABEL Email="ayush.nalanda@gmail.com"
+ENV NAME ayush
+#RUN apt-get update -y && apt-get install apache2 -y
+#RUN echo "Hi this is from dockerfile" > /var/www/index.html
+RUN whoami > /tmp/1st.txt
+RUN useradd $NAME
+USER $NAME
+RUN whoami > /tmp/2nd.txt
+ADD apache2.tar /tmp/  //Extract and copy the contents of apache2 tar file. 
+COPY apache2.tar /tmp/ //Copy the whole apache2.tar file without copy
+CMD ["python"]  //there should be only one CMD command in a dockerfile and it will run when we start the container. here we will get python shell if python installed previously rather /bin/bash.
+-----------------------------------
+FROM ubuntu:16.04
+ENV NAME ayush
+ENV PASS password123
+RUN apt-get update -y && apt-get install openssh-server
+RUN useradd -d /home/ayush -g root -G sudo -m -p $(echo "$PASS" | openssl passwd -l -stdin) $NAME
+EXPOSE 22 80   //expose multiple point(docker ps)
+CMD ["/usr/sbin/sshd","-D"]  // Run ssh in backgroud at start of container. 
+
+--------------------------------------------------
+docker pull mysql
+docker images
+docker run -d --name mysql1 -e MYSQL_ALLOW_EMPTY_PASSWORD=true mysql
+docker images
+docker ps
+docker image inspect docker.io/mysql
+docker volume ls
+docker volume inspect 2747ddf5439b68644b0e5da6430f3b438d0f2b567be80c6885a735c4ad60ab3d
+cd /var/lib/docker/volumes/2747ddf5439b68644b0e5da6430f3b438d0f2b567be80c6885a735c4ad60ab3d/_data
+
+docker exec -it c33 bash
+docker container ls
+docker rm -f c33c0f195e39
+docker exec -it 16c2fb7c22c9 bash
+#mysql
+
+docker volume ls
+docker run -itd -v 64f9a6dae6fdd5411cf6e2966b96f31b91318fe3fea65216254d04a970468b3e:/var/lib/mysql mysql
+docker exec -it 78b bash
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| ayush              |
+| example            |
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| test               |
++-------------------
+
+Here data presist for old container. 
+docker rm -f $(docker ps -a -q)  : Delete all container. 
+-----------------------------------------------------------------------
+--ENTRYPOINT & CMD ----
+nano Dockerfile
+FROM ubuntu
+LABEL name="Ayush Kumar"
+LABEL email="ayush@gmail.com"
+MAINTAINER bikku kumar
+ENV NAME ayush
+VOLUME vol-1
+RUN apt-get update -y && apt install -y tree
+ENTRYPOINT ["tree"]
+CMD ["--help"]
+-------------------
+#docker build . -t mytree:1  //build docker image from above dockerfile
+#docker run -it --name tree mytree:1 // while running docker image it will show tree --help output. So, Entrypoint and CMD runs ones container starts
+
+--------------------------------------------------------
+nano Dockerfile
+FROM ubuntu
+RUN apt-get update -y && apt install -y tree
+ENTRYPOINT ["tree"]
+CMD ["--version"]
+---Build Image---
+#docker build . -t mytree:1
+---Run container-----
+docker run -it --name tree mytree:1 
+output: tree v1.7.0 (c) 1996 - 2014 by Steve Baker, Thomas Moore, Francesc Rocher, Florian Sesser, Kyosuke Tokoro  //same tree --version command output.
+---------------------------
+cat test.sh
+#!/bin/bash
+echo -e "This is test script\nMy name is $1\nYour name is $2"
+------Docker file-----
+cat Dockerfile
+FROM ubuntu
+LABEL name="Ayush Kumar"
+LABEL email="ayush@gmail.com"
+MAINTAINER bikku kumar
+ENV NAME ayush
+COPY test.sh /tmp/
+ENTRYPOINT ["/tmp/test.sh"]
+-----Building Image---
+#docker build . -t entrypoint_script:1 
+------Running container-------
+#docker run -it --name container1 entrypoint_script:1 Ayush Molu
+---Output----
+This is test script
+My name is Ayush
+Your name is Molu
+Agenda: Most of the docker file uses Entrypoint to run some script to while initiating docker container. 
+**********************************
+&&&&Docker Networking&&&&&&
+#docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+4592f907418f        bridge              bridge              local
+73e76f8d0508        host                host                local
+6381a57fc6cb        none                null                local
+
+# docker inspect 4592f907418f
+"Containers": {}   //show the container attached to the network
+---------------------------------
+#docker run -itd --name apache2 ubutu_apache
+# docker inspect bridge
+"Containers": {
+            "6748faa985b89f54e54e033ef07bcf05f11fa04ff60119534ea648e322a92873": {  // one container is attached to bridge network
+			"Name": "apache2",
+--------------------------------------------------------
+#docker network create -d bridge test
+docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+1cd1699ccebb        bridge              bridge              local
+73e76f8d0508        host                host                local
+6381a57fc6cb        none                null                local
+b4e041c21344        test                bridge              local
+
+docker run -itd --network test ubutu_apache
+docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+4f581bb722c0        ubutu_apache        "/bin/bash"         31 minutes ago      Up 31 minutes                           festive_rosalind
+f423f5de8660        ubutu_apache        "/bin/bash"         49 minutes ago      Up 49 minutes                           kind_mccarthy
+94ae81170631        ubutu_apache        "/bin/bash"         About an hour ago   Up About an hour                        gallant_pasteur
+#docker exec -it 94ae81170631 bash
+#docker inspect 94ae81170631
+docker volume ls
+docker network inspect 94ae81170631
+docker network inspect b4e041c21344
+docker run -itd --network test ubutu_apache
+docker network inspect b4e041c21344
+docker exec -it 94ae81170631 bash
+docker network prune
+docker inspect f423f5de8660
+docker run -itd --network test ubutu_apache
+docker network inspect test
+"Containers": {
+            "4f581bb722c06350fc81580a2b91521e77275adf1c8f7308e0c4c1c8cf3f194c": {
+                "Name": "festive_rosalind",
+				 "MacAddress": "02:42:ac:12:00:04",
+                "IPv4Address": "172.18.0.4/16",
+
+			"94ae81170631db17d072d81bfbce310731577ca8ec6f6f03a81a7f8bbe169b30": {
+                "Name": "gallant_pasteur",
+				 "MacAddress": "02:42:ac:12:00:02",
+                "IPv4Address": "172.18.0.2/16",
+                "IPv6Address": ""
+#docker exec -it gallant_pasteur bash
+root@94ae81170631:/# ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.18.0.2  netmask 255.255.0.0  broadcast 0.0.0.0
+        inet6 fe80::42:acff:fe12:2  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:ac:12:00:02  txqueuelen 0  (Ethernet)
+        RX packets 87  bytes 261206 (261.2 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 65  bytes 4345 (4.3 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1  (Local Loopback)
+        RX packets 12  bytes 1350 (1.3 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 12  bytes 1350 (1.3 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+root@94ae81170631:/# ping 172.18.0.3
+PING 172.18.0.3 (172.18.0.3): 56 data bytes
+64 bytes from 172.18.0.3: icmp_seq=0 ttl=64 time=0.121 ms
+64 bytes from 172.18.0.3: icmp_seq=1 ttl=64 time=0.241 ms
+
+
+-------------------------------------------------------------
+#docker network create -d bridge --subnet 192.168.2.0/24 custom1
+]# docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+a5fccfbf0a66        192.168.2.0/24      bridge              local
+527e54c61d64        bridge              bridge              local
+-----------------------------------------------------------------
+]# docker network inspect custom1
+[
+    {
+        "Name": "custom1",
+        "Id": "04da27f04d50530d3d6e5eb1dc4d7e931888decbb068f1f24e8834ed36f694bc",
+        "Created": "2020-01-18T00:30:46.229500998+05:30",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "192.168.2.0/24"
+--------Attaching network to new container--------------
+# docker run -itd --network custom1 --name container1 -p 80:80 ubuntu_apache_ready
+4e97349e82ff49119f77a5e91b004f056f71743e201aa1757da2039d54cdd45d
+----------------------------------------------------------------------
+#docker ps
+CONTAINER ID        IMAGE                 COMMAND                  CREATED              STATUS              PORTS                NAMES
+4e97349e82ff        ubuntu_apache_ready   "/bin/sh -c 'apach..."   About a minute ago   Up About a minute   0.0.0.0:80->80/tcp   container1
+---------------------------------------------------------
+]# docker run -itd --network=custom1 --name container3 -v my-vol:/tmp -p 83:80 ubuntu_apache_ready    //Command
+af6f265a149e354c7b91a48a3c99ee12ca590435ca1c1c15ffdb2089d031814e
+--------------------------------------------------------------
+# docker inspect af6
+"Mounts": [
+            {
+                "Type": "volume",
+                "Name": "my-vol",
+                "Source": "/var/lib/docker/volumes/my-vol/_data",
+                "Destination": "/tmp",
+"NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "a0e0ca4204ad25baf6962453f232de7127746ca06643f98a34cf92f55db09e6a",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {
+                "80/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "83"
+"NetworkID": "04da27f04d50530d3d6e5eb1dc4d7e931888decbb068f1f24e8834ed36f694bc",
+                    "EndpointID": "f6a21ff7e4cc5029dfc0662f6078b3cbb6272a93252a7a0ad96dd13eb499b86e",
+                    "Gateway": "192.168.2.1",
+                    "IPAddress": "192.168.2.3",
+                    "IPPrefixLen": 24,
+------------------------------------------------------------------------
+sudo iptables -I DOCKER-USER -i br-########1 -o br-########2 -s 172.17.0.2 -d 172.19.0.2 -j ACCEPT
+    sudo iptables -I DOCKER-USER -i br-########2 -o br-########1 -s 172.19.0.2 -d 172.17.0.2 -j ACCEPT
+-----------------------------------------------------
+Create a third network and plug both containers into this network.
+How to
+
+The command docker run accept only one occurrence of the option --net, what you have to do is to docker start the containers and then to docker network connect them to a shared network.
+
+
+
+sudo iptables -I DOCKER-USER -i br-3f595e016de9 -o br-f79389ecdd23 -s 172.17.0.2 -d 10.0.0.2 -j ACCEPT
+
+----------------------------------------------
+DNS is already enabled with custome created docker network drivers.  
+#Host Network
+------------------------------
+]# docker network ls                   //Command
+NETWORK ID          NAME                DRIVER              SCOPE
+3f595e016de9        bridge              bridge              local
+f79389ecdd23        custom              bridge              local
+73e76f8d0508        host                host                local
+6381a57fc6cb        none                null                local
+[root@knode docker]# docker network inspect f79389ecdd23      //Command
+"Containers": {
+            "5e2213edb2c38e02930231a910178408227a4033c2711b3af08a3e80dad77764": {
+                "Name": "apacheserver",
+                "EndpointID": "660795e550b279d6f6a8412f0a8d27906fcd6b7bd2e1d98fa4701da98996e159",
+                "MacAddress": "02:42:0a:00:00:02",
+                "IPv4Address": "10.0.0.2/24",
+                "IPv6Address": ""
+            },
+            "e4b3127178ad95702fe9d9079e0ac42f7bc65166b7878e6b3692799289683643": {
+                "Name": "apacheserver1",
+                "EndpointID": "dc8ead885343536ef61fda285eec5d5415e0876ebb340b577928c3ad2759c91b",
+                "MacAddress": "02:42:0a:00:00:03",
+                "IPv4Address": "10.0.0.3/24",
+                "IPv6Address": ""
+-------Ping with Hostname------------------------
+# docker exec -it 5e2213edb2c3 bash               //Command
+root@5e2213edb2c3:/# hostname
+5e2213edb2c3
+root@5e2213edb2c3:/# ping e4b3127178ad
+PING e4b3127178ad (10.0.0.3) 56(84) bytes of data.
+64 bytes from apacheserver1.custom (10.0.0.3): icmp_seq=1 ttl=64 time=0.079 ms
+
+--------Attache Multiple Network to a Container---------
+]# docker run -it ubuntu_apache1 bash     //Command
+root@21c4eb3ad1bc:/# ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.17.0.2  netmask 255.255.0.0  broadcast 0.0.0.0
+        inet6 fe80::42:acff:fe11:2  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:ac:11:00:02  txqueuelen 0  (Ethernet)
+        RX packets 39  bytes 197173 (197.1 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 40  bytes 2625 (2.6 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1  (Local Loopback)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+-------Add another network on running container-------
+[root@knode docker]# docker network connect/disconnect f79389ecdd23 21c4eb3ad1bc     //Command to attach container to different network
+root@21c4eb3ad1bc:/# ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.17.0.2  netmask 255.255.0.0  broadcast 0.0.0.0
+        inet6 fe80::42:acff:fe11:2  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:ac:11:00:02  txqueuelen 0  (Ethernet)
+        RX packets 39  bytes 197173 (197.1 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 40  bytes 2625 (2.6 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.0.0.2  netmask 255.255.255.0  broadcast 0.0.0.0
+        inet6 fe80::42:aff:fe00:2  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:0a:00:00:02  txqueuelen 0  (Ethernet)
+        RX packets 8  bytes 648 (648.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 8  bytes 648 (648.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1  (Local Loopback)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions
+
+-----------Docker Registry------------------------------------
+# docker pull registry            //Pull official docker registry image from docker hub.
+# docker images
+REPOSITORY                          TAG                 IMAGE ID            CREATED             SIZE
+docker.io/ubuntu                    latest              549b9b86cb8d        4 weeks ago         64.2 MB
+docker.io/newdeveloper/apache-php   latest              ed19f1649095        8 months ago        291 MB
+docker.io/registry                  latest              f32a97de94e1        10 months ago       25.8 MB
+----------------------------------------------------------------------------
+# docker run -d -p 5000:5000 --name docker_registry registry   //default port docker registry is 5000
+bf65b7e65f6bd15085c297e6daa35e08ad78a9a8b24a024fb556fb13ac61c835
+# docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
+bf65b7e65f6b        registry            "/entrypoint.sh /e..."   10 minutes ago      Up 10 minutes       0.0.0.0:5000->5000/tcp   docker_registry
+]# docker image tag docker.io/ubuntu localhost:5000/my_ubuntu
+
+]# docker images
+REPOSITORY                          TAG                 IMAGE ID            CREATED             SIZE
+localhost:5000/my_ubuntu            latest              549b9b86cb8d        4 weeks ago         64.2 MB
+-----Push to local Registry------------------------------------
+# docker push localhost:5000/my_ubuntu
+The push refers to a repository [localhost:5000/my_ubuntu]
+918efb8f161b: Pushed
+27dd43ea46a8: Pushed
+9f3bfcc4a1a8: Pushed
+2dc9f76fb25b: Pushed
+latest: digest: sha256:2695d3e10e69cc500a16eae6d6629c803c43ab075fa5ce60813a0fc49c47e859 size: 1152
+-------------------Remove existing local image ----------------
+ docker rmi localhost:5000/my_ubuntu
+Untagged: localhost:5000/my_ubuntu:latest
+Untagged: localhost:5000/my_ubuntu@sha256:2695d3e10e69cc500a16eae6d6629c803c43ab075fa5ce60813a0fc49c47e859
+------------Now Pulling image from local docker registry----------------
+]# docker pull localhost:5000/my_ubuntu
+Using default tag: latest
+Trying to pull repository localhost:5000/my_ubuntu ...
+latest: Pulling from localhost:5000/my_ubuntu
+Digest: sha256:2695d3e10e69cc500a16eae6d6629c803c43ab075fa5ce60813a0fc49c47e859
+Status: Downloaded newer image for localhost:5000/my_ubuntu:latest
+-----------------------------
+#docker images
+REPOSITORY                          TAG                 IMAGE ID            CREATED             SIZE
+localhost:5000/my_ubuntu            latest              549b9b86cb8d        4 weeks ago         64.2 MB
+
+Check in browser: http://192.168.1.6:5000/v2/_catalog
+
+
+Docker: By default docker registry only allows https secure connection except for 127.0.0.0/8 range.
+If you want to allow any other ip range http request then create below file.
+#nano /etc/docker/daemon.json
+{
+ "insecure-registries" : ["192.168.1.5:5000"]
+ }
+ #systemctl restart docker.service
+ ## docker image tag 192.168.1.1:5000/ubuntu_mysql 192.168.1.6:5000/ubuntu_mysql
+ # docker push 192.168.1.6:5000/ubuntu_mysql
+The push refers to a repository [192.168.1.6:5000/ubuntu_mysql]
+Get https://192.168.1.6:5000/v1/_ping: http: server gave HTTP response to HTTPS client
+[root@knode docker]# nano /etc/docker/daemon.json
+# nano /etc/docker/daemon.json
+{
+ "insecure-registries" : ["192.168.1.6:5000"]
+ }
+ #systemctl restart docker
+# docker push 192.168.1.6:5000/ubuntu_mysql
+25575e327c84: Pushed
+814c70fdae62: Pushed
+---------Setting Up Secure Docker Registry------------------------------------
+#rm /etc/docker/daemon.json
+#docker stop registry_container
+#systemctl restart docker
+Create dir to store ceritifcate generated by openssl commands
+#openssl req -newkey rsa:4096 -nodes -sha256 -keyout /docker/docker_registry/certs/domain.key -x509 -days 365 -out /docker/docker_registry/certs/domain.crt
+*******Enter Common name: repo.docker.local*******  //any domain names we can give
+#ls /certs/
+domain.crt domain.key
+#cd /etc/docker/
+#mkdir certs.d
+#mkdir repo.docker.local:5000
+#cp certs/domain.crt /etc/docker/certs.d/repo.docker.local\:5000/ca.crt
+#systemctl restart docker
+Now Mount the certs into registry container
+#docker run -d -p 5000:5000 --name secure_registry -v /docker/docker_registry/certs/:/certs -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt -e REGISTRY_HTTP_TLS_KEY=/certs/domain.key registry 
+--------------Now Push secure images to Docker registry----------------
+#docker image tag mysql repo.docker.local:5000/mysql
+#vi /etc/hosts
+192.168.1.6 repo.docker.local
+#docker push repo.docker.local:5000/mysql
+*********************************
+Basic Authentication with Docker Registry
+******************************************
+#mkdir /auth
+#docker container run --entrypoint htpasswd registry -bnB ayush password >/auth/htpasswd   //b- batch mode, n-display outoput, B-bcrypt, username-ayush
+cat /auth/htpasswd
+** Now run docker registry to use with above login credentials.
+docker container run -d \
+-p 5000:5000 \
+--name registry_b \
+-v "$(pwd)"/auth:/auth \
+-v "$(pwd)"/certs:/certs \
+-e "REGISTRY_AUTH=htpasswd" \
+-e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+-e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+-e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt \
+-e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \
+registry
+****Now container should be running**********
+#docker login repo.docker.com:5000
+username
+passwd  //copy and paste the genrated password
+#
